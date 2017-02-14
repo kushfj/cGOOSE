@@ -47,7 +47,13 @@
 
 
 
-
+/**
+ * Function to publish a GOOSE frame to a packet capture descriptor
+ *
+ * @param goose_frame_t	pointer to a GOOSE frame type struct
+ * @param pcap_t	pointer to packet capture descriptor
+ * @return int	-1 on error, else 0
+ */
 int publish(goose_frame_t *goose_frame_ptr, pcap_t *pcap_ptr) {
   /* Check paramaters */
   if (NULL == goose_frame_ptr) {
