@@ -47,6 +47,9 @@
  */
 
 
+/**
+ * TODO: Complete implementation
+ */
 void goose_handler_print(u_char *args, const struct pcap_pkthdr *header, 
  const u_char *packet) 
 {
@@ -86,9 +89,19 @@ void goose_handler_print(u_char *args, const struct pcap_pkthdr *header,
 
 
 
+/**
+ * Function to subscribe to the hardware MAC address on a packet capture 
+ * descriptor and pass on the read frame to a GOOSE message handler for a 
+ * specific number of message, or indefenitely if the count is 0
+ *
+ * @param mac_ptr	pointer to hardware MAC address
+ * @param pcap_ptr	pointer to packet capture descriptor
+ * @paran count	int representing count of frames to process or forever if 0
+ * @returns int	-1 on error, -2 if the break callback is invoked, else 0 
 
+ */
 int subscriber(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count, 
- pcap_handler goose_handler) 
+ pcap_handler *goose_handler) 
 {
   /* Check paramaters */
   if (NULL == mac_ptr) {
@@ -112,7 +125,7 @@ int subscriber(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count,
     /* pcap_loopbreak called */
     fprintf(stderr, "ERROR: pcap_loopbreak called\n");
   } else if (-1  == ret) {
-    /* pcap_loopbreak called */
+    /* error while reading frame */
     fprintf(stderr, "ERROR: %s\n", pcap_geterr(pcap_ptr));
   }
 
