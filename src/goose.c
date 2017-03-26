@@ -44,15 +44,17 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
   uint16_t *encoded_len) 
 {
   /* Check parameter */
-  if (goose_frame == 0 || encoded_data == 0) {
+  if (NULL == goose_frame || NULL == encoded_data) 
+  {
     *encoded_len = 0;
     return;
   }
  
   /* Declare local variables */
-  unsigned int offset = 0;                          /* Offset into the buffer */
-  unsigned int data_len = 0;                        /* Offset into the buffer */
-  uint8_t tag = 0x80;                              /* Tag used for PDU data */
+  unsigned int offset = 0;                         /* Offset into the buffer */
+  unsigned int len_offset = 0;      /* Mark offset in buffer for length byte */
+  unsigned int data_len = 0;              /* Length of the GOOSE PDU element */
+  uint8_t tag = 0x80;                               /* Tag used for PDU data */
   // TODO: rename to use buffer to encoded data
   uint8_t *buffer = encoded_data;       /* Buffer to contain the encoded data */
 
@@ -67,13 +69,15 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
   offset += data_len;
 
   /* Encode the GOOSE PDU */
-  buffer[offset++] = GOOSE_PREAMBLE; /* Preamble 0x61 */
-  buffer[offset++] = 0x0;    /* TODO GOOSE PDU length */
+  buffer[offset++] = GOOSE_PREAMBLE;                        /* Preamble 0x61 */
+  len_offset = offset;                                  /* Mark the position */
+  buffer[offset++] = 0x0;        /* Temporarily assign zero GOOSE PDU length */
 
   buffer[offset++] = tag++; /* gocbref */
   data_len = strlen((const char *)(goose_frame->goose_pdu.gocbref));
   buffer[offset++] = (uint8_t)data_len;
-  if (data_len != 0) {
+  if (data_len != 0) 
+  {
     memcpy(buffer+offset, goose_frame->goose_pdu.gocbref, data_len);
     offset += data_len;
   }
@@ -85,7 +89,8 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
   buffer[offset++] = tag++; /* datSet */
   data_len = strlen((const char *)(goose_frame->goose_pdu.datSet));
   buffer[offset++] = (uint8_t)data_len;
-  if (data_len != 0) {
+  if (data_len != 0) 
+  {
     memcpy(buffer+offset, goose_frame->goose_pdu.datSet, data_len);
     offset += data_len;
   }
@@ -93,7 +98,8 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
   buffer[offset++] = tag++; /* goID (optional) */
   data_len = strlen((const char *)(goose_frame->goose_pdu.goID));
   buffer[offset++] = (uint8_t)data_len;
-  if (data_len != 0) {
+  if (data_len != 0) 
+  {
     memcpy(buffer+offset, goose_frame->goose_pdu.goID, data_len);
     offset += data_len;
   }
@@ -132,14 +138,71 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
   /* security (optional) */
   /* TODO */
 
+  /* Update the GOOSE PDU length */
+  buffer[len_offset] = ((offset - len_offset) - 1);
+
   /* Update the encoded buffer length */ 
   *encoded_len = offset;
   return;
 }
 
-int set_dest_mac( goose_frame_t *goose_frame, const uint8_t *dmac ) {
+
+void print_goose_pdu_elem_str(uint8_t *goose_pdu_elem)
+{
   /* Check parameters */
-  if ( goose_frame == 0 || dmac == 0 ) {
+  if (NULL == goose_pdu_elem)
+  {
+    return;
+  }
+
+  /* Declare local variables */
+  uint8_t *len_ptr = 0;        /* Pointer to the ASN.1 length of the element */
+  uint8_t *val_ptr = 0;               /* Pointer to the value of the element */
+  uint8_t *tmp_val_ptr = 0;             /* Pointer to new string for element */
+
+  /* Process and print the element */
+  len_ptr = goose_pdu_elem + 1;  /* Get length, magic 1 skips ASN.1 tag byte */
+  val_ptr = len_ptr + 1;       /* Get value, magic 1 skips ASN.1 length byte */
+  MALLOC(tmp_val_ptr, uint8_t, ((*len_ptr)+1)); /* Magic 1 is for extra '\0' */
+  memcpy(tmp_val_ptr, val_ptr, (*len_ptr));
+  tmp_val_ptr[(*len_ptr)] = '\0';      /* '\0' terminate to make it a string */
+  fprintf(stdout, "%s", tmp_val_ptr);
+  FREE(tmp_val_ptr);
+}
+
+
+#define SET_MAC(WHICH, FRAME, MAC) \
+do \
+{ \
+  /* Check parameters */ \
+  if ( FRAME == 0 || MAC == 0 ) \
+  { \
+    return 0; \
+  } \
+\
+  /* Declare variables */ \
+  unsigned int i = 0; /* Temp variable used for array index */ \
+\
+  /* Copy the ethernet header into the GOOSE frame */ \
+  for( i = 0; i < 6; i++ ) \
+  { \
+    WHICH = MAC[i]; \
+  } \
+\
+  return 1; \
+\
+} \
+while (0)
+
+
+int set_dest_mac( goose_frame_t *goose_frame, const uint8_t *dmac ) 
+{
+  SET_MAC(goose_frame->eth_hdr.ether_dhost[i], goose_frame, dmac);
+
+#if 0
+  /* Check parameters */
+  if ( goose_frame == 0 || dmac == 0 ) 
+  {
     return 0;
   }
 
@@ -147,17 +210,23 @@ int set_dest_mac( goose_frame_t *goose_frame, const uint8_t *dmac ) {
   unsigned int i = 0; /* Temp variable used for array index */
 
   /* Copy the ethernet header into the GOOSE frame */
-  for( i = 0; i < 6; i++ ) {
+  for( i = 0; i < 6; i++ ) 
+  {
     goose_frame->eth_hdr.ether_dhost[i] = dmac[i];
   }
   
   return 1; 
+#endif
 }
 
 
-int set_src_mac( goose_frame_t *goose_frame, const uint8_t *smac ) {
+int set_src_mac( goose_frame_t *goose_frame, const uint8_t *smac ) 
+{
+  SET_MAC(goose_frame->eth_hdr.ether_shost[i], goose_frame, smac);
+#if 0
   /* Check parameters */
-  if ( goose_frame == 0 || smac == 0 ) {
+  if ( goose_frame == 0 || smac == 0 ) 
+  {
     return 0;
   }
 
@@ -165,9 +234,11 @@ int set_src_mac( goose_frame_t *goose_frame, const uint8_t *smac ) {
   unsigned int i = 0; /* Temp variable used for array index */
 
   /* Copy the ethernet header into the GOOSE frame */
-  for( i = 0; i < 6; i++ ) {
+  for( i = 0; i < 6; i++ ) 
+  {
     goose_frame->eth_hdr.ether_shost[i] = smac[i];
   }
   
   return 1; 
+#endif
 }
