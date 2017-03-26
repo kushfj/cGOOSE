@@ -48,7 +48,8 @@
 
 
 /**
- * Function to publish a GOOSE frame to a packet capture descriptor
+ * Function to publish a GOOSE frame to a packet capture descriptor.
+ * The timestamp on the frame is updated prior to publishing.
  *
  * @param goose_frame_t	pointer to a GOOSE frame type struct
  * @param pcap_t	pointer to packet capture descriptor
@@ -86,10 +87,11 @@ int publish(goose_frame_t *goose_frame_ptr, pcap_t *pcap_ptr) {
   if (bytes_published == -1) {
     fprintf(stderr, "ERROR: could not inject frame\n");
     return -1;
-  } else {
-    hex_dump(buff, len);
-    fprintf(stdout, "%d bytes published\n", bytes_published);
-  }
+  }// else {
+    // TODO: Implement checking for verbosity level to output details
+    //hex_dump(buff, len);
+    //fprintf(stdout, "%d bytes published\n", bytes_published);
+  //}
 
   /* Done */
   return 0;
