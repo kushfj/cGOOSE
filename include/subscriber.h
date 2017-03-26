@@ -43,6 +43,8 @@
  * Function prototypes
  */
 
+// TODO: Copy comments from .c file
+
 void goose_handler_print(u_char *args, const struct pcap_pkthdr *header, 
  const u_char *packet); 
 
