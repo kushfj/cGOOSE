@@ -37,6 +37,7 @@
 #include <arpa/inet.h>
 #include <net/ethernet.h>
 #include <pcap.h>
+#include <string.h>
 
 
 
@@ -48,17 +49,30 @@
 
 
 /**
- * TODO: Complete implementation
+ * Simple GOOSE packet handler callback function. If the packet is a GOOSE frame 
+ * and is for the subscribed hardware MAC address then the GOOSE is printed to 
+ * stdout in human-readable format
  */
 void goose_handler_print(u_char *args, const struct pcap_pkthdr *header, 
  const u_char *packet) 
 {
-  /* TODO: Delete me */
-  fprintf(stdout, "goose_handler_print\n"); 
+  /* Check parameters */
+  if (NULL == header || NULL == packet)
+  {
+    fprintf(stderr, "ERROR: invalid parameters\n"); 
+    fflush(stderr);
+    return;
+  }
 
   /* Declare local variables */
   int len = 0;             /* Variable to hold number of bytes read off wire */
-  struct ether_header *eth_hdr = 0;            /* Pointer to ethernet header */
+  struct ether_header *eth_hdr = NULL;         /* Pointer to ethernet header */
+  goose_header_t *goose_hdr = NULL;               /* Pointer to GOOSE header */
+  uint8_t *goose_pdu_ptr = NULL;               /* Pointer into the GOOSE PDU */
+  uint8_t *goose_pdu_elem_ptr = NULL;   /* Temp pointer to GOOSE PDU element */
+  uint8_t *len_ptr = NULL;         /* Pointer to length of GOOSE PDU element */
+  //uint8_t *val_ptr = NULL;          /* Pointer to value of GOOSE PDU element */
+  //uint8_t *tmp_val_ptr = NULL;    /* Temp Pointer to reversed bytes of value */
 
   /* Initialise variables */
   len = header->len; /* Get number of bytes */
@@ -76,7 +90,118 @@ void goose_handler_print(u_char *args, const struct pcap_pkthdr *header,
     /* Process VLAN encapsulated frame */
     /* Process GOOSE frame */
     case (int)ETHER_GOOSE:
-      fprintf(stdout, "ethernet frame\n"); 
+      fprintf(stdout, "-- GOOSE FRAME START --\n"); 
+
+      /* Print ethernet header */
+      fprintf(stdout, "Ethernet\n");
+      fprintf(stdout, "dst: "); print_mac(eth_hdr->ether_dhost);
+      fprintf(stdout, "\nsrc: "); print_mac(eth_hdr->ether_shost);
+      fprintf(stdout, "\ntype: 0x%04x\n", ntohs(eth_hdr->ether_type)); 
+
+      /* Print GOOSE header */
+      fprintf(stdout, "GOOSE\n");
+      goose_hdr = (goose_header_t *)(packet + sizeof(struct ether_header));
+      fprintf(stdout, "\tappid:\t\t0x%04x\n", ntohs(goose_hdr->appid)); 
+      fprintf(stdout, "\tlen:\t\t%hu\n", ntohs(goose_hdr->len)); 
+      fprintf(stdout, "\tres1:\t\t0x%04x\n", ntohs(goose_hdr->res1)); 
+      fprintf(stdout, "\tres2:\t\t0x%04x\n", ntohs(goose_hdr->res2)); 
+
+      /* Print GOOSE PDU */
+      fprintf(stdout, "\tgoosePDU\n");
+      goose_pdu_ptr = (((uint8_t *)goose_hdr) + sizeof(goose_header_t));
+
+      /* Get first GOOSE PDU element, note that the Magic 2 is because we want 
+       * to skip the preamble and the PDU length */
+      goose_pdu_elem_ptr = goose_pdu_ptr + 2;
+
+      /* Print gocbRef */
+      // TODO: Implement better handling for multi-byte lengths
+      len_ptr = goose_pdu_elem_ptr + 1; 
+      fprintf(stdout, "\t\tgocbref: "); 
+      print_goose_pdu_elem_str(goose_pdu_elem_ptr);
+      fprintf(stdout, "\n");
+      /* Magic 2 is 1 byte for tag and 1 byte for length */
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print timeAllowedtoLive */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\ttatL: "); 
+      fprintf(stdout, "[to be implemented]");
+      fprintf(stdout, "\n");
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print datSet */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\tdatSet: "); 
+      print_goose_pdu_elem_str(goose_pdu_elem_ptr);
+      fprintf(stdout, "\n");
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print goID */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\tgoID: "); 
+      print_goose_pdu_elem_str(goose_pdu_elem_ptr);
+      fprintf(stdout, "\n");
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print t */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\tt: "); 
+      fprintf(stdout, "[to be implemented]");
+      fprintf(stdout, "\n");
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print stNum */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      //fprintf(stdout, "\t\tstNum: %hu\n", ntohs(goose_pdu_elem_ptr+2)); 
+      fprintf(stdout, "\t\tstNum: ");
+      switch (*len_ptr)
+      {
+        case 1:
+          fprintf(stdout, "%hu", (*(len_ptr+1)));
+          break;
+        default:
+          fprintf(stdout, "[undefined]");
+      }
+      fprintf(stdout, "\n");
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print sqNum */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      //fprintf(stdout, "\t\tsqNum: %hu\n", ntohs(goose_pdu_elem_ptr+2)); 
+      fprintf(stdout, "\t\tsqNum: ");
+      switch (*len_ptr)
+      {
+        case 1:
+          fprintf(stdout, "%hu", (*(len_ptr+1)));
+          break;
+        default:
+          fprintf(stdout, "[undefined]");
+      }
+      fprintf(stdout, "\n");
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print test */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "test: %s\n", ((*goose_pdu_elem_ptr) ? "true" : "false")); 
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print confRev */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\tconfrev: %d\n", goose_pdu_elem_ptr[2]); 
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print ndsCom */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\tndsCom: %s\n", ((*goose_pdu_elem_ptr) ? "true" : "false")); 
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      /* Print numDatSetEntries */
+      len_ptr = goose_pdu_elem_ptr + 1;
+      fprintf(stdout, "\t\tnumEntires: %d\n", goose_pdu_elem_ptr[2]); 
+      goose_pdu_elem_ptr = goose_pdu_elem_ptr + (*len_ptr) + 2;
+
+      fprintf(stdout, "-- GOOSE FRAME END --\n"); 
       break;
     /* Ignore all other frames */
     default:
@@ -100,8 +225,8 @@ void goose_handler_print(u_char *args, const struct pcap_pkthdr *header,
  * @returns int	-1 on error, -2 if the break callback is invoked, else 0 
 
  */
-int subscriber(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count, 
- pcap_handler *goose_handler) 
+int subscribe(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count, 
+ pcap_handler goose_handler) 
 {
   /* Check paramaters */
   if (NULL == mac_ptr) {
@@ -114,10 +239,17 @@ int subscriber(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count,
     return -1;
   }
 
+  /* Clamp count value to zero */
+  if (count < 0)
+  {
+    count = 0;
+  }
+
   /* Declare local variables */
   int ret = 0; /* Variable to hold return value from function calls */
 
   /* Decode the GOOSE frame received */
+  /* DEBUG */ printf("waiting for packets\n");
   ret = pcap_loop(pcap_ptr, count, goose_handler, (u_char *)NULL);
 
   /* Check return value */
