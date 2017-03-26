@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <net/ethernet.h>
 
 
 /*
@@ -50,9 +51,11 @@ static const long int BYTE_MASK[4] = { 0xff, 0xff00, 0xff0000, 0xff000000 };
  * Function definitions
  */
 
-void hex_dump(const void *data, const unsigned int len) {
+void hex_dump(const void *data, const unsigned int len) 
+{
   /* Check paramaters */
-  if ( data == 0 ) {
+  if ( data == 0 ) 
+  {
     fprintf(stderr, "cannot dump null data.\n");
     return;
   }
@@ -63,8 +66,10 @@ void hex_dump(const void *data, const unsigned int len) {
   unsigned char *dat = (unsigned char *)data; /* Pointer to data as a byte */
 
   /* Iteratre through the data */
-  for(i=0; i<len; i++) {
-    if ((i % 16) == 0) {
+  for(i=0; i<len; i++) 
+  {
+    if ((i % 16) == 0) 
+    {
       /* Dump the ASCII buffer if it's not the first time */
       if (i != 0) fprintf( stdout, " %s\n", buffer); 
       /* Dump the offset */
@@ -76,7 +81,8 @@ void hex_dump(const void *data, const unsigned int len) {
 
     /* Add the ASCII value to the buffer if ASCII, else use '.' to 
      * represent data */
-    if (dat[i] >= 0x20 && dat[i] <= 0x7e ) {
+    if (dat[i] >= 0x20 && dat[i] <= 0x7e ) 
+    {
       buffer[i%16] = dat[i];
     } else {
       buffer[i%16] = '.';
@@ -87,7 +93,8 @@ void hex_dump(const void *data, const unsigned int len) {
   }
 
   /* Add padding if hex dump num full, and do final dump of ASCII buffer */
-  while ((i % 16) != 0) {
+  while ((i % 16) != 0) 
+  {
     i++;
     fprintf( stdout, "   " );
   }
@@ -95,9 +102,11 @@ void hex_dump(const void *data, const unsigned int len) {
 }
 
 
-uint8_t num_bytes_for_ui32(const uint32_t num) {
+uint8_t num_bytes_for_ui32(const uint32_t num) 
+{
   /* Check paramater */
-  if ( num == 0 ) {
+  if ( num == 0 ) 
+  {
     return 1;
   }
 
@@ -115,9 +124,31 @@ uint8_t num_bytes_for_ui32(const uint32_t num) {
 }
 
 
-uint32_t reverse_ui32(uint32_t num) {
+void print_mac(const uint8_t *mac)
+{
+  /* Check parameter */
+  if (NULL == mac)
+  {
+    fprintf(stdout, "0000000000");
+    return;
+  }
+
+  /* Declare local variables */
+  int i=0; /* Temporary variable for loop index */
+  for(i=0; i<ETHER_ADDR_LEN; i++)
+  {
+    fprintf(stdout, "%02x", mac[i]);
+  }
+  fflush(stdout);
+  return;
+}
+
+
+uint32_t reverse_ui32(uint32_t num) 
+{
   /* Check paramater */
-  if (num == 0) {
+  if (num == 0) 
+  {
     return 0;
   }
 
@@ -133,9 +164,36 @@ uint32_t reverse_ui32(uint32_t num) {
 }
 
 
-void time_to_bytes(const long int tv, uint8_t *addr) {
+void reverse_bytes(uint8_t *src, uint8_t *dst, size_t num_bytes)
+{
+  /* Check parameters */
+  if (NULL == src || NULL == dst || 0 == num_bytes)
+  {
+    return;
+  } 
+  else if (1 == num_bytes)
+  {
+    dst[0] = src[0];
+    return;
+  }
+
+  /* Declare local variables */
+  size_t i; /* Temporary variable as loop index */
+
+  for (i=0; i<num_bytes; ++i)
+  {
+    dst[(num_bytes-1)-i] = src[i]; /* Copy the bytes in reverse order */
+  }
+
+  return;
+}
+
+
+void time_to_bytes(const long int tv, uint8_t *addr) 
+{
   /* Check paramater */
-  if (addr == 0) {
+  if (addr == 0) 
+  {
     return;
   }
 
@@ -143,16 +201,19 @@ void time_to_bytes(const long int tv, uint8_t *addr) {
   unsigned int i; /* Loop index */
 
   /* Convert to bytes and append to address */
-  for(i = 0; i < 4; i++ ) {
+  for(i = 0; i < 4; i++ ) 
+  {
     addr[i] = (tv & BYTE_MASK[i]) >> (8*i);
   }
   return;
 }
 
 
-void timevalq_to_bytes(const timevalq_t *t, uint8_t *addr) {
+void timevalq_to_bytes(const timevalq_t *t, uint8_t *addr) 
+{
   /* Check paramaters */
-  if (addr == 0) {
+  if (addr == 0) 
+  {
     return;
   }
 
@@ -166,9 +227,11 @@ void timevalq_to_bytes(const timevalq_t *t, uint8_t *addr) {
 }
 
 
-uint8_t ui32_to_bytes(const uint32_t num, uint8_t *addr) {
+uint8_t ui32_to_bytes(const uint32_t num, uint8_t *addr) 
+{
   /* Check paramater */
-  if (addr == 0) {
+  if (addr == 0) 
+  {
     return 0;
   }
 
@@ -177,7 +240,8 @@ uint8_t ui32_to_bytes(const uint32_t num, uint8_t *addr) {
   unsigned int i = 0;                          /* Loop index */
 
   /* Convert to bytes and append to address */
-  for(i = 0; i < num_bytes; i++) {
+  for(i = 0; i < num_bytes; i++) 
+  {
     addr[i] = (num & BYTE_MASK[i]) >> (8*i);
   }
 
