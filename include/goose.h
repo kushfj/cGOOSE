@@ -114,8 +114,12 @@ typedef struct _goose_frame_t_ {
  * Function Prototypes
  */
 
+// TODO: Move comments from .c file into header
 void encode_goose_frame( goose_frame_t *goose_frame, uint8_t *encoded_data, 
   uint16_t *encoded_len );
+
+// TODO: Add function comments
+void print_goose_pdu_elem_str(uint8_t *goose_pdu_elem);
 
 int set_dest_mac( goose_frame_t *goose_frame, const uint8_t *dmac );
 
