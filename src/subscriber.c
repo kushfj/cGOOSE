@@ -89,7 +89,7 @@ void goose_handler_print(u_char *args, const struct pcap_pkthdr *header,
   switch (ntohs(eth_hdr->ether_type)) {
     /* Process VLAN encapsulated frame */
     /* Process GOOSE frame */
-    case (int)ETHER_GOOSE:
+    case 0x88b8:
       fprintf(stdout, "-- GOOSE FRAME START --\n"); 
 
       /* Print ethernet header */

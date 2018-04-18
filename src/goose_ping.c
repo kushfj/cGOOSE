@@ -492,7 +492,7 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
   {
     /* Process VLAN encapsulated frame */
     /* Process GOOSE frame */
-    case (int)ETHER_GOOSE:
+    case 0x88b8:
        
       break;
     /* Ignore all other frames */
