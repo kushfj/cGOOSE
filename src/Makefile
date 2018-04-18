@@ -1,20 +1,27 @@
+CC = gcc
+
+SRC = $(wildcard *.c)
+
+OBJ = $(SRC:.c=.o)
+
+LDFLAGS = -lpcap -lpthread
+
+debug:	DIR = ../bin/debug
+debug:	CFLAGS += -DDEBUG -v -Wall -g3 -I../include -o $(DIR)/
+debug:	all
+
+release:	DIR = ../bin/release
+release:	CFLAGS += -DNDEBUG -Wall -O3 -I../include -o $(DIR)/
+release:	all
+
 all: goose_ping
 
-goose_ping: goose_ping.c goose.o publisher.o subscriber.o
-	gcc -Wall -g -O2 -I../include -o ../bin/goose_ping goose_ping.c goose.o utils.o publisher.o subscriber.o -lpcap -lpthread
+goose_ping: goose_ping.c goose.o publisher.o subscriber.o utils.o
+	$(CC) $(CFLAGS)goose_ping goose_ping.c $(DIR)/goose.o $(DIR)/publisher.o $(DIR)/subscriber.o $(DIR)/utils.o $(LDFLAGS)
 
-goose.o: goose.c utils.o
-	gcc -Wall -g -O2 -c goose.c -I../include -o goose.o 
+%.o: %.c
+	$(CC) $(CFLAGS)$@ -c $<
 
-publisher.o: publisher.c goose.o utils.o
-	gcc -Wall -g -O2 -c publisher.c -I../include -o publisher.o
-
-subscriber.o: subscriber.c goose.o 
-	gcc -Wall -g -O2 -c subscriber.c -I../include -o subscriber.o
-
-utils.o: utils.c
-	gcc -Wall -g -O2 -c utils.c -I../include -o utils.o
-
+.PHONY: clean
 clean:
-	rm -f ../bin/goose_ping
 	rm -f *.o
