@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <net/ethernet.h>
 
@@ -50,6 +51,13 @@ static const long int BYTE_MASK[4] = { 0xff, 0xff00, 0xff0000, 0xff000000 };
 /*
  * Function definitions
  */
+
+int compare_mac(const uint8_t *first, const uint8_t *second)
+{
+  /* Check parameter */
+  /* TODO: should check parameters and return different value */
+  return memcmp((const void *)first, (const void *)second, (size_t)ETHER_ADDR_LEN);
+}
 
 void hex_dump(const void *data, const unsigned int len) 
 {
