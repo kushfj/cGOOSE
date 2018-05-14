@@ -105,7 +105,14 @@ static const int TIMEOUT=5000;
  * Array of time values for send and receive times.
  */
 static struct timeval SEND_TIMES[NUM_TRIGGERS];
-//static struct timeval RECV_TIMES[NUM_TRIGGERS];
+static struct timeval RECV_TIMES[NUM_TRIGGERS];
+
+/**
+ * Count of number of GOOSE frames sent and received, used to track the send 
+ * and receive times
+ */
+static unsigned int num_sent = 0;
+static unsigned int num_recv = 0;
 
 
 
@@ -144,6 +151,12 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
  */
 //int goose_ping(void *pcap, void *goose_frame, void *stNum);
 
+/**
+ * Function to print the time difference between the send and receive times 
+ * for the frames
+ */
+void print_times();
+
 /** 
  * Function to print the usage information for the goose_ping utility
  */
@@ -155,7 +168,16 @@ void print_usage();
  * @param sig int for the signal number
  * @return void
  */
- void signal_handler(int sig);
+void signal_handler(int sig);
+
+
+/**
+ * Function used for testing of the subscriber. Dummy function which does not 
+ * do anything, simple returns
+ */
+void dummy_goose_handler(u_char *args, const struct pcap_pkthdr *header, 
+ const u_char *packet);
+
 
 
 
@@ -260,7 +282,7 @@ int main(int argc, char *argv[])
   /* Set signal handler */
   if (-1 == sigaction(SIGINT, &signal_action, (struct sigaction *)NULL))
   {
-    fprintf(stderr, "ERROR: unable to register signal handler\n");
+    fprintf(stderr, "[!] unable to register signal handler\n");
     HANDLE_ERRNO(errno, "main.sigaction");
     fflush(stderr);
     exit(EXIT_FAILURE);
@@ -311,13 +333,13 @@ int main(int argc, char *argv[])
   pcap = pcap_open_live(argv[1], BUFSIZ, PROMISC, TIMEOUT, (char *)&errbuf);
   if (NULL == pcap) /* Check if packet capture handle was obtained */
   {
-    fprintf(stderr, "ERROR: could not open pcap (%s - %s)\n", argv[1], errbuf);
+    fprintf(stderr, "[!] could not open pcap (%s - %s)\n", argv[1], errbuf);
     fflush(stderr);
     exit(EXIT_FAILURE);
   } 
   else if (strlen(errbuf) > 0) /* Check if any warning were raised */
   {
-    fprintf(stderr, "WARN: warning when opening pcap (%s - %s)\n", 
+    fprintf(stderr, "[!] warning when opening pcap (%s - %s)\n", 
      argv[1], errbuf);
   }
 
@@ -325,10 +347,12 @@ int main(int argc, char *argv[])
   args.iface = argv[1];                              /* Pointer to interface */
   memcpy(&(args.from), &smac, 6 * sizeof(uint8_t));      /* Set hardware MAC */
   args.count = NUM_TRIGGERS;         /* Count of number of frames to receive */
-  args.handler = goose_handler_print;       /* GOOSE handler in subscriber.h */
+  //args.handler = dummy_goose_handler;       /* GOOSE handler in subscriber.h */
+  args.handler = goose_pong_handler;       /* GOOSE handler in subscriber.h */
   args.user = NULL;                             /* Pointer to user arguments */
 
   /* Start the receiving (subscriber) thread */
+  /* DEBUG */ printf("[-] creating subscriber thread\n");
   thread_return = pthread_create(&recv_thread, (pthread_attr_t *)NULL, 
    (void *)(&goose_pong), (void *)&args);
   if (thread_return)
@@ -337,17 +361,16 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
+  /* DEBUG */ printf("[-] starting publisher\n");
   /* Wait for the subscriber to start and then continue with the sending 
    * (publisher) main thread */
   sem_wait(&SUB_MUTEX); /* Wait for the subscriber to be started */
-  /* DEBUG */ printf("publisher sleeping\n");
   i = sleep(3);         /* Sleep to ensure subscriber is ready */
   if (i)
   {
-    fprintf(stdout, "ERROR: sleep remaining (%u)\n", i);
+    fprintf(stdout, "[!] sleep remaining (%u)\n", i);
   }
 
-  /* DEBUG */ printf("starting publisher\n");
   for(i = 0; i < NUM_TRIGGERS; i++ )
   {
     /* Get send time */
@@ -357,21 +380,27 @@ int main(int argc, char *argv[])
     }
     else
     {
-      memcpy(&SEND_TIMES[i], &tv, sizeof(struct timeval));
+      memcpy(&SEND_TIMES[num_sent++], &tv, sizeof(struct timeval));
     }
+
+    /* Increment sequence number like a valid GOOSE frame */
+    goose_frame.goose_pdu.sqNum += 1; /* sqNum */
 
     /* Publish GOOSE frames */
     publish( &goose_frame, pcap );
+    /* DEBUG */ printf("[.] published (%u)\n", num_sent);
   }
-  /* DEBUG */ printf("waiting for subscriber thread to join\n");
+  /* DEBUG */ printf("[+] finished publishing\n");
   /* Wait for all threads or timeout to occur before main continues */
   i = 0; /* Initialise return value */
   i = pthread_join(recv_thread, NULL);
-  if (i) {
-    fprintf(stderr, "ERROR: could not join thread (%d:%s)\n", i, strerror(i));
+  if (i) 
+  {
+    fprintf(stderr, "[!] could not join thread (%d:%s)\n", i, strerror(i));
   }
 
-  /* DEBUG */ printf("finished.\n");
+  /* DEBUG */ printf("[+] finished run\n");
+  print_times();
  
   /* Close the network interface */ 
   pcap_close(pcap);
@@ -394,8 +423,9 @@ int main(int argc, char *argv[])
 void *goose_pong(void *args)
 {
   /* Check paramaters */
-  if (NULL == args) {
-    fprintf(stderr, "ERROR: args invalid\n");
+  if (NULL == args) 
+  {
+    fprintf(stderr, "[!] args invalid\n");
     fflush(stderr);
     return NULL;
   }
@@ -414,7 +444,7 @@ void *goose_pong(void *args)
    TIMEOUT, (char *)&errbuf);
   if (NULL == pcap) /* Check if packet capture handle was obtained */
   {
-    fprintf(stderr, "ERROR: could not open pcap (%s - %s)\n", recv_args->iface, 
+    fprintf(stderr, "[!] could not open pcap (%s - %s)\n", recv_args->iface, 
      errbuf);
     fflush(stderr);
     // TODO: Return something meaningful
@@ -422,7 +452,7 @@ void *goose_pong(void *args)
   } 
   else if (strlen(errbuf) > 0) /* Check if any warning were raised */
   {
-    fprintf(stderr, "WARN: warning when opening pcap (%s - %s)\n", 
+    fprintf(stderr, "[!] warning when opening pcap (%s - %s)\n", 
      recv_args->iface, errbuf);
     // TODO: Return something meaningful
     return NULL;
@@ -430,17 +460,20 @@ void *goose_pong(void *args)
 
   /* Receive frames */
   sem_post(&SUB_MUTEX); /* Ready to receive GOOSE frames */
-  /* DEBUG */ printf("starting subscriber\n");
+  /* DEBUG */ printf("[-] starting subscriber\n");
   read_result = subscribe(recv_args->from, pcap, recv_args->count,
    recv_args->handler);
-  if (read_result == 0) {
-    fprintf(stdout, "Done processing %d frames\n", recv_args->count);
+  if (read_result == 0) 
+  {
+    fprintf(stdout, "[+] done processing %d frames\n", recv_args->count);
   }
-  else if (read_result == -1) {
-    fprintf(stderr, "Processing terminated. Unknown error\n");
+  else if (read_result == -1) 
+  {
+    fprintf(stderr, "[-] processing terminated. unknown error\n");
   }
-  else if (read_result == -2) {
-    fprintf(stderr, "Processing terminated. pcap_breakloop() called\n");
+  else if (read_result == -2) 
+  {
+    fprintf(stderr, "[-] processing terminated. pcap_breakloop() called\n");
   } 
   else 
   {
@@ -460,13 +493,21 @@ void *goose_pong(void *args)
 }
 
 
+void dummy_goose_handler(u_char *args, const struct pcap_pkthdr *header, 
+ const u_char *packet)
+{
+  printf(".");
+  return;
+}
+
+
 void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
  const u_char *packet) 
 {
   /* Check parameters */
   if (NULL == header || NULL == packet)
   {
-    fprintf(stderr, "ERROR: invalid parameters\n"); 
+    fprintf(stderr, "[!] invalid parameters\n"); 
     fflush(stderr);
     return;
   }
@@ -474,12 +515,13 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
   /* Declare local variables */
   int len = 0;             /* Variable to hold number of bytes read off wire */
   struct ether_header *eth_hdr = NULL;         /* Pointer to ethernet header */
+  struct timeval tv = {0};           /* Temporary variable to hold send time */
 
   /* Initialise variables */
   len = header->len; /* Get number of bytes */
   if (0 == len) 
   {
-    fprintf(stderr, "ERROR: frame length zero\n"); 
+    fprintf(stderr, "[!] frame length zero\n"); 
     fflush(stderr);
     return;
   }
@@ -493,6 +535,17 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
     /* Process VLAN encapsulated frame */
     /* Process GOOSE frame */
     case 0x88b8:
+      /* Get recv time */
+      if (gettimeofday(&tv, NULL)) 
+      {
+        HANDLE_ERRNO(errno, "main.gettimeofday"); /* Print error and continue */
+      }
+      else
+      {
+        memcpy(&RECV_TIMES[num_recv++], &tv, sizeof(struct timeval));
+      }
+
+      /* DEBUG */ printf("[.] received (%u)\n", num_recv);
        
       break;
     /* Ignore all other frames */
@@ -502,6 +555,21 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
 
   fflush(stdout);
   return; /* Done handling frame */
+}
+
+
+void print_times()
+{
+  int i = 0;                 /* Temporary variable as loop index */
+  struct timeval s_tv = {0}; /* Temporary variable to hold send time */
+  struct timeval r_tv = {0}; /* Temporary variable to hold receive time */
+
+  for(i = 0; i < NUM_TRIGGERS; i++ )
+  {
+    memcpy(&r_tv, &RECV_TIMES[i], sizeof(struct timeval));
+    memcpy(&s_tv, &SEND_TIMES[i], sizeof(struct timeval));
+    printf("%u - rtt: %ld us\n", i+1, ((r_tv.tv_sec - s_tv.tv_sec)*1000000L + r_tv.tv_usec) - s_tv.tv_usec); 
+  }
 }
 
 
@@ -520,12 +588,12 @@ void signal_handler(int sig)
   /* Check parameter - should never happen */
   if (sig < 1 || sig > NSIG)
   {
-    fprintf(stderr, "ERROR: invalid signal - %d\n", sig);
+    fprintf(stderr, "[!] invalid signal - %d\n", sig);
   }
   else
   {
     /* Print signal details */
-    fprintf(stdout, "\nINFO: caught signal (%d:%s), exiting!\n", 
+    fprintf(stdout, "\n[-] caught signal (%d:%s), exiting!\n", 
      sig, strsignal(sig));
     /* TODO: Implement closing of pcap handlers, free memory, etc. */
   }
