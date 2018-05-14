@@ -79,6 +79,17 @@ do \
 while (0)
 
 
+/**
+ * Function to compare EUI-48 hardware address. 
+ * 
+ * @param first		- uint8_t * pointer to the first hardware address
+ * @param second	- uint8_t * pointer to the second hardware address
+ * @return	- 0 if the first hardware address is the same as the second 
+ *		hardware address, else less than or greater than zero if 
+ * 		first address is matched relative to the second hardware 
+ *		address.
+ */
+int compare_mac(const uint8_t *first, const uint8_t *second);
 
 /** 
  * Function to output the specified buffer as hexadecimal values to stdout
