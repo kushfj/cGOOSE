@@ -250,7 +250,7 @@ int subscribe(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count,
 
   /* Decode the GOOSE frame received */
   /* DEBUG */ printf("waiting for packets\n");
-  ret = pcap_loop(pcap_ptr, count, goose_handler, (u_char *)NULL);
+  ret = pcap_loop(pcap_ptr, count, goose_handler, (u_char *)mac_ptr);
 
   /* Check return value */
   if (-2  == ret) {
