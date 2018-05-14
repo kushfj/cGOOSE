@@ -535,10 +535,18 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
     /* Process VLAN encapsulated frame */
     /* Process GOOSE frame */
     case 0x88b8:
+      /* Check if the subscriber MAC matches */
+      if (0 != compare_mac((uint8_t *)eth_hdr->ether_shost, (uint8_t *)args))
+      {
+        printf("\nshost: "); print_mac(eth_hdr->ether_shost);
+        printf("\nargs: "); print_mac(args);
+        break;
+      }
+
       /* Get recv time */
       if (gettimeofday(&tv, NULL)) 
       {
-        HANDLE_ERRNO(errno, "main.gettimeofday"); /* Print error and continue */
+        HANDLE_ERRNO(errno, "goose_pong_handler.gettimeofday"); /* Print error and continue */
       }
       else
       {
