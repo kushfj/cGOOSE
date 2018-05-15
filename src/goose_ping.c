@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
   /* Wait for the subscriber to start and then continue with the sending 
    * (publisher) main thread */
   sem_wait(&SUB_MUTEX); /* Wait for the subscriber to be started */
-  i = sleep(3);         /* Sleep to ensure subscriber is ready */
+  i = sleep(5);         /* Sleep to ensure subscriber is ready */
   if (i)
   {
     fprintf(stdout, "[!] sleep remaining (%u)\n", i);
@@ -406,7 +406,8 @@ int main(int argc, char *argv[])
   pcap_close(pcap);
 
   /* Block until all threads finish then exit */
-  //pthread_exit(NULL);
+  /* DEBUG */ printf("[-] waiting for threats to finish\n");
+  pthread_exit(NULL);
 
   /* Done */
   fflush(stdout);
@@ -515,6 +516,7 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
   /* Declare local variables */
   int len = 0;             /* Variable to hold number of bytes read off wire */
   struct ether_header *eth_hdr = NULL;         /* Pointer to ethernet header */
+  uint16_t *res1 = 0;                     /* Pointer to the Reserver 1 field */
   struct timeval tv = {0};           /* Temporary variable to hold send time */
 
   /* Initialise variables */
@@ -538,12 +540,26 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
       /* Check if the subscriber MAC matches */
       if (0 != compare_mac((uint8_t *)eth_hdr->ether_shost, (uint8_t *)args))
       {
-        printf("\nshost: "); print_mac(eth_hdr->ether_shost);
-        printf("\nargs: "); print_mac(args);
         break;
       }
 
-      /* Get recv time */
+      /* Check if a protected checksum is present */
+      res1 = get_res1((goose_frame_t *)packet);
+      if (0 != res1)
+      {
+        /* We using the most significant bit of the reserved 1 field to 
+           indicate that a protected checksum is present */
+        if (0x80 == (0x80 | (*res1))) 
+        {
+          /* Check if the protected checksum is correct */
+          if (0 != verify_protected_checksum((goose_frame_t *)packet))
+          {
+            /* TODO: maybe log error, but we just working on timing of checks */
+          }
+        }
+      }
+
+      /* OK - ready for processing so get recv time */
       if (gettimeofday(&tv, NULL)) 
       {
         HANDLE_ERRNO(errno, "goose_pong_handler.gettimeofday"); /* Print error and continue */
