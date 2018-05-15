@@ -114,15 +114,73 @@ typedef struct _goose_frame_t_ {
  * Function Prototypes
  */
 
-// TODO: Move comments from .c file into header
-void encode_goose_frame( goose_frame_t *goose_frame, uint8_t *encoded_data, 
+/** Function to big-endian encode the GOOSE frame into the encoded_data buffer 
+ * and populate the encoded_length variable with the number of bytes in the 
+ * populated buffer. If the GOOSE frame or the buffer are NULL then encoded 
+ * length is reset to 0, else the GOOSE frame is ASN.1 encoded into the encoded 
+ * data buffer and the encoded_length value updated appropriately. 
+ *
+ * @param goose_frame	- pointer to the GOOSE frame struct to be encoded
+ * @param encoded_data	- pointer to the buffer to store the ASN.1 encoded bytes
+ * @param encoded_len	- pointer to memory to hold the length of the encoded 
+ * 			bytes
+ */
+void encode_goose_frame(const goose_frame_t *goose_frame, uint8_t *encoded_data, 
   uint16_t *encoded_len );
 
-// TODO: Add function comments
+/**
+ * Function to return a pointer to the Reserve 1 field in the GOOSE header for 
+ * the GOOSE frame specified. If the GOOSE frame is not specified (NULL) then 
+ * NULL is returned
+ *
+ * @param goose_frame	- pointer to the GOOSE frame
+ */
+uint16_t *get_res1(goose_frame_t *goose_frame);
+
+/**
+ * Function to display a GOOSE PDU string element to stdout. If the GOOSE PDU 
+ * element is not specified, then the function returns, else the ASN.1 tag and 
+ * length values are extracted from the element and the value displayed as a 
+ * string to stdout.
+ *
+ * @param goose_pdu_elem	- pointer to ASN.1 encoded GOOSE PDU string 
+ * 				element
+ */
 void print_goose_pdu_elem_str(uint8_t *goose_pdu_elem);
 
+/**
+ * Function to set the destination EUI hardware address on the GOOSE frame to 
+ * the specified value. If the GOOSE frame or value is not set then 0 is 
+ * returned, else the destination address is set and 1 is returned
+ *
+ * @param goose_frame	- pointer to the GOOSE frame to be updated
+ * @param dmac	- pointer to the hardware address to set to
+ * @return int	- 1 if address is updated, else 0
+ */
 int set_dest_mac( goose_frame_t *goose_frame, const uint8_t *dmac );
 
+/**
+ * Function to set the source EUI hardware address on the GOOSE frame to 
+ * the specified value. If the GOOSE frame or value is not set then 0 is 
+ * returned, else the source address is set and 1 is returned
+ *
+ * @param goose_frame	- pointer to the GOOSE frame to be updated
+ * @param smac	- pointer to the hardware address to set to
+ * @return int	- 1 if address is updated, else 0
+ */
 int set_src_mac( goose_frame_t *goose_frame, const uint8_t *smac );
+
+/**
+ * Function to verify if the protected checksum for the GOOSE frame is correct.
+ *
+ * @param goose_frame	- pointer to the GOOSE frame to verify
+ * @param int	- returns -2 if the GOOSE frame is not specified, else 0 if the 
+ *		computed protected checksum is the same as the protected 
+ *		checksum supplied with the GOOSE frame, second, else less than 
+ *		or greater than zero if computed protected checksum is matched 
+ * 		relative to the protected checksum supplied with the GOOSE 
+ *		frame address.
+ */
+int verify_protected_checksum(goose_frame_t *goose_frame);
 
 #endif /* _GOOSE_H_ */
