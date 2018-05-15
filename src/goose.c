@@ -40,7 +40,7 @@
  * Function Definitions 
  */
 
-void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data, 
+void encode_goose_frame(const goose_frame_t *goose_frame, uint8_t *encoded_data,
   uint16_t *encoded_len) 
 {
   /* Check parameter */
@@ -70,7 +70,7 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
 
   /* Encode the GOOSE PDU */
   buffer[offset++] = GOOSE_PREAMBLE;                        /* Preamble 0x61 */
-  len_offset = offset;                                  /* Mark the position */
+  len_offset = offset;             /* Mark the position to set the length at */
   buffer[offset++] = 0x0;        /* Temporarily assign zero GOOSE PDU length */
 
   buffer[offset++] = tag++; /* gocbref */
@@ -134,16 +134,30 @@ void encode_goose_frame(goose_frame_t *goose_frame, uint8_t *encoded_data,
   offset += ui32_to_bytes(goose_frame->goose_pdu.numDatSetEntries, (uint8_t *)(buffer+offset));
 
   /* allData */
-  /* TODO */
+  /* TODO: Implement this */
   /* security (optional) */
-  /* TODO */
+  /* TODO: Implement this */
 
   /* Update the GOOSE PDU length */
-  buffer[len_offset] = ((offset - len_offset) - 1);
+  /* TODO: There is a bug here in the calculation of the length */
+  buffer[len_offset] = ((offset - len_offset));
 
   /* Update the encoded buffer length */ 
   *encoded_len = offset;
   return;
+}
+
+
+uint16_t *get_res1(goose_frame_t *goose_frame)
+{
+  /* Check parameters */
+  if (NULL == goose_frame)
+  {
+    return (uint16_t *)NULL;
+  }
+
+  /* Return the reserved field from the header in the frame */
+  return &(goose_frame->goose_header.res1);
 }
 
 
@@ -171,6 +185,7 @@ void print_goose_pdu_elem_str(uint8_t *goose_pdu_elem)
 }
 
 
+/* TODO: consider replacing this with memcpy */
 #define SET_MAC(WHICH, FRAME, MAC) \
 do \
 { \
@@ -241,4 +256,28 @@ int set_src_mac( goose_frame_t *goose_frame, const uint8_t *smac )
   
   return 1; 
 #endif
+}
+
+
+int verify_protected_checksum(goose_frame_t *goose_frame)
+{
+  /* Check parameters */
+  if (NULL == goose_frame)
+  {
+    return -2;
+  }
+
+  /* Declare local variables */
+  uint8_t *calc_hmac = 0; /* Pointer to the bytes containing the computed 
+                             checksum */
+  uint8_t *msg_hmac = 0; /* Pointer to the bytes containing the protected 
+                            checksum */
+  unsigned int hmac_len = 0; /* Length of the checksum values to compare */
+
+  /* Compute the protected checksum for the GOOSE frame */
+  // TODO: here!
+  /* Get the protected checksum value from the GOOSE frame */
+
+  /* Compare and return the result */
+  return memcmp((const void *)calc_hmac, (const void *)msg_hmac, (size_t)hmac_len);
 }
