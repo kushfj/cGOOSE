@@ -12,8 +12,11 @@ debug: src
 	mkdir -p ./bin/debug/
 	$(MAKE) debug -C src 
 
-debug-test: debug
+debug-prof-test: debug
 	sudo valgrind -v --track-fds=yes --error-limit=no --tool=memcheck --leak-check=yes bin/debug/goose_ping lo
+
+debug-test: debug
+	sudo bin/debug/goose_ping lo
 
 pi-debug: src
 	mkdir -p ./bin/raspberry-pi_debug/
@@ -27,5 +30,8 @@ release: src
 	mkdir -p ./bin/release/
 	$(MAKE) release -C src 
 
-release-test: release
+release-prof-test: release
 	sudo valgrind -v --track-fds=yes --error-limit=no --tool=memcheck --leak-check=yes bin/release/goose_ping lo
+
+release-test: release
+	sudo bin/release/goose_ping lo
