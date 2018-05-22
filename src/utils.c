@@ -59,7 +59,7 @@ int compare_mac(const uint8_t *first, const uint8_t *second)
   return memcmp((const void *)first, (const void *)second, (size_t)ETHER_ADDR_LEN);
 }
 
-void hex_dump(const void *data, const unsigned int len) 
+void hex_dump(const void *data, const size_t len) 
 {
   /* Check paramaters */
   if ( data == 0 ) 
@@ -110,6 +110,22 @@ void hex_dump(const void *data, const unsigned int len)
 }
 
 
+#if 0
+#define IS_BIG_ENDIAN() \
+do \
+{ \
+\
+  const static int i = 1; \
+\
+  return ((*(char*)&i) == 0); \
+\
+} \
+while (0)
+#endif 
+#define IS_BIG_ENDIAN (!*(unsigned char *)&(uint16_t){1})
+
+
+
 uint8_t num_bytes_for_ui32(const uint32_t num) 
 {
   /* Check paramater */
@@ -152,7 +168,7 @@ void print_mac(const uint8_t *mac)
 }
 
 
-uint32_t reverse_ui32(uint32_t num) 
+uint32_t reverse_ui32(const uint32_t num) 
 {
   /* Check paramater */
   if (num == 0) 
@@ -187,10 +203,12 @@ void reverse_bytes(uint8_t *src, uint8_t *dst, size_t num_bytes)
 
   /* Declare local variables */
   size_t i; /* Temporary variable as loop index */
+  size_t j; /* Temporary variable as array index */
 
-  for (i=0; i<num_bytes; ++i)
+  for (i=0, j=num_bytes-1; i<num_bytes; ++i, j--)
   {
-    dst[(num_bytes-1)-i] = src[i]; /* Copy the bytes in reverse order */
+    //dst[(num_bytes-1)-i] = src[i]; /* Copy the bytes in reverse order */
+    dst[j] = src[i]; /* Copy the bytes in reverse order */
   }
 
   return;
@@ -206,9 +224,10 @@ void time_to_bytes(const long int tv, uint8_t *addr)
   }
 
   /* Declare local variables */
-  unsigned int i; /* Loop index */
+  size_t i; /* Loop index */
 
   /* Convert to bytes and append to address */
+  /* TODO: Check if uint32_to_bytes can be used here? */
   for(i = 0; i < 4; i++ ) 
   {
     addr[i] = (tv & BYTE_MASK[i]) >> (8*i);
@@ -244,13 +263,28 @@ uint8_t ui32_to_bytes(const uint32_t num, uint8_t *addr)
   }
 
   /* Declare local variables */
+  size_t i = 0;                          /* Loop index */
+  size_t j = 0;                          /* Array index */
   uint8_t num_bytes = num_bytes_for_ui32(num); /* Number of bytes used by num */
-  unsigned int i = 0;                          /* Loop index */
+
+  /* Initialise destination */
+  memset(addr, 0, num_bytes);
 
   /* Convert to bytes and append to address */
-  for(i = 0; i < num_bytes; i++) 
+  if (IS_BIG_ENDIAN)
   {
-    addr[i] = (num & BYTE_MASK[i]) >> (8*i);
+    for(i = 0; i < num_bytes; i++) 
+    {
+      addr[i] = (num & BYTE_MASK[i]) >> (8*i);
+    }
+  }
+  else
+  {   
+    for(i = 0, j = num_bytes-1; i < num_bytes; i++, j--) 
+    {
+      //addr[(num_bytes - (i+1))] = (num & BYTE_MASK[i]) >> (8*i);
+      addr[j] = (num & BYTE_MASK[i]) >> (8*i);
+    }
   }
 
   return num_bytes;
