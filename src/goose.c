@@ -51,9 +51,9 @@ void encode_goose_frame(const goose_frame_t *goose_frame, uint8_t *encoded_data,
   }
  
   /* Declare local variables */
-  unsigned int offset = 0;                         /* Offset into the buffer */
-  unsigned int len_offset = 0;      /* Mark offset in buffer for length byte */
-  unsigned int data_len = 0;              /* Length of the GOOSE PDU element */
+  size_t offset = 0;                         /* Offset into the buffer */
+  size_t len_offset = 0;      /* Mark offset in buffer for length byte */
+  size_t data_len = 0;              /* Length of the GOOSE PDU element */
   uint8_t tag = 0x80;                               /* Tag used for PDU data */
   // TODO: rename to use buffer to encoded data
   uint8_t *buffer = encoded_data;       /* Buffer to contain the encoded data */
@@ -196,7 +196,7 @@ do \
   } \
 \
   /* Declare variables */ \
-  unsigned int i = 0; /* Temp variable used for array index */ \
+  size_t i = 0; /* Temp variable used for array index */ \
 \
   /* Copy the ethernet header into the GOOSE frame */ \
   for( i = 0; i < 6; i++ ) \
@@ -213,25 +213,6 @@ while (0)
 int set_dest_mac( goose_frame_t *goose_frame, const uint8_t *dmac ) 
 {
   SET_MAC(goose_frame->eth_hdr.ether_dhost[i], goose_frame, dmac);
-
-#if 0
-  /* Check parameters */
-  if ( goose_frame == 0 || dmac == 0 ) 
-  {
-    return 0;
-  }
-
-  /* Declare variables */
-  unsigned int i = 0; /* Temp variable used for array index */
-
-  /* Copy the ethernet header into the GOOSE frame */
-  for( i = 0; i < 6; i++ ) 
-  {
-    goose_frame->eth_hdr.ether_dhost[i] = dmac[i];
-  }
-  
-  return 1; 
-#endif
 }
 
 
@@ -246,7 +227,7 @@ int set_src_mac( goose_frame_t *goose_frame, const uint8_t *smac )
   }
 
   /* Declare variables */
-  unsigned int i = 0; /* Temp variable used for array index */
+  size_t i = 0; /* Temp variable used for array index */
 
   /* Copy the ethernet header into the GOOSE frame */
   for( i = 0; i < 6; i++ ) 
@@ -272,7 +253,7 @@ int verify_protected_checksum(goose_frame_t *goose_frame)
                              checksum */
   uint8_t *msg_hmac = 0; /* Pointer to the bytes containing the protected 
                             checksum */
-  unsigned int hmac_len = 0; /* Length of the checksum values to compare */
+  size_t hmac_len = 0; /* Length of the checksum values to compare */
 
   /* Compute the protected checksum for the GOOSE frame */
   // TODO: here!
