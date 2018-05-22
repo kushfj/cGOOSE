@@ -1,4 +1,4 @@
-all: release
+all: debug release doc
 
 .PHONY: clean
 clean:
@@ -15,7 +15,7 @@ debug: src
 debug-prof-test: debug
 	sudo valgrind -v --track-fds=yes --error-limit=no --tool=memcheck --leak-check=yes bin/debug/goose_ping lo
 
-debug-test: 
+debug-run: 
 	sudo bin/debug/goose_ping lo
 
 pi-debug: src
@@ -33,5 +33,5 @@ release: src
 release-prof-test: release
 	sudo valgrind -v --track-fds=yes --error-limit=no --tool=memcheck --leak-check=yes bin/release/goose_ping lo
 
-release-test: 
+release-run: 
 	sudo bin/release/goose_ping lo
