@@ -43,11 +43,29 @@
  * Function prototypes
  */
 
-// TODO: Copy comments from .c file
 
+/**
+ * Simple GOOSE packet handler callback function. If the packet is a GOOSE frame 
+ * and is for the subscribed hardware MAC address then the GOOSE is printed to 
+ * stdout in human-readable format
+ *
+ * @param arg	- pointer to bytes containing arguments to the packet handler
+ * @param header	- pointer to the packet capture header
+ * @param packet	- pointer to bytes containing the actual frame.
+ */
 void goose_handler_print(u_char *args, const struct pcap_pkthdr *header, 
  const u_char *packet); 
 
+/**
+ * Function to subscribe to the hardware MAC address on a packet capture 
+ * descriptor and pass on the read frame to a GOOSE message handler for a 
+ * specific number of message, or indefenitely if the count is 0
+ *
+ * @param mac_ptr       pointer to hardware MAC address
+ * @param pcap_ptr      pointer to packet capture descriptor
+ * @paran count int representing count of frames to process or forever if 0
+ * @returns int -1 on error, -2 if the break callback is invoked, else 0 
+ */
 
 int subscribe(uint8_t *mac_ptr, pcap_t *pcap_ptr, int count, 
  pcap_handler goose_handler);
