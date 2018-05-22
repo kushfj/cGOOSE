@@ -95,9 +95,9 @@ int compare_mac(const uint8_t *first, const uint8_t *second);
  * Function to output the specified buffer as hexadecimal values to stdout
  *
  * @param data	- void * pointer to the data to dump
- * @param len	- unsigned int representing the length of the data
+ * @param len	- size_t representing the length of the data
  */
-void hex_dump(const void *data, const unsigned int len);
+void hex_dump(const void *data, const size_t len);
 
 /** 
  * Function to return the actual number of bytes used by an unsigned 32-bit 
