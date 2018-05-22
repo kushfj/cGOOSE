@@ -4,26 +4,27 @@ SRC = $(wildcard *.c)
 
 OBJ = $(SRC:.c=.o)
 
+CFLAGS = -Wall -Wextra -Werror -Wmissing-prototypes -pedantic
 LDFLAGS = -lpcap -lpthread 
 
 pi-debug:	CC = arm-linux-gnueabi-gcc
 pi-debug:	DIR = ../bin/raspberry-pi_debug
 pi-debug:	LDFLAGS = -lpcap -lpthread -L/home/nkush/development/libpcap-1.8.1
-pi-debug:	CFLAGS += -DNDEBUG -Wall -O3 -I../include -o $(DIR)/
+pi-debug:	CFLAGS += -DNDEBUG -O3 -I../include -o $(DIR)/
 pi-debug:	all
 
 pi-release:	CC = arm-linux-gnueabi-gcc
 pi-release:	DIR = ../bin/raspberry-pi_release
 pi-release:	LDFLAGS = -lpcap -lpthread -L/home/nkush/development/libpcap-1.8.1
-pi-release:	CFLAGS += -DNDEBUG -Wall -g3 -I../include -o $(DIR)/
+pi-release:	CFLAGS += -DNDEBUG -g3 -I../include -o $(DIR)/
 pi-release:	all
 
 debug:	DIR = ../bin/debug
-debug:	CFLAGS += -DDEBUG -v -Wall -g3 -I../include -o $(DIR)/
+debug:	CFLAGS += -DDEBUG -v -g3 -I../include -o $(DIR)/
 debug:	all
 
 release:	DIR = ../bin/release
-release:	CFLAGS += -DNDEBUG -Wall -O3 -I../include -o $(DIR)/
+release:	CFLAGS += -DNDEBUG -O3 -I../include -o $(DIR)/
 release:	all
 
 all: goose_ping
