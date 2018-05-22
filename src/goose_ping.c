@@ -155,12 +155,12 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
  * Function to print the time difference between the send and receive times 
  * for the frames
  */
-void print_times();
+void print_times(void);
 
 /** 
  * Function to print the usage information for the goose_ping utility
  */
-void print_usage();
+void print_usage(void);
 
 /**
  * Function to gracefully exit the program 
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
   goose_frame.goose_pdu.goID = (uint8_t *)&goid;       /* goID (optional) */
   goose_frame.goose_pdu.t = &t;                        /* t */
   goose_frame.goose_pdu.stNum = 0;                     /* stNum */
-  goose_frame.goose_pdu.sqNum = 1;                     /* sqNum */
+  goose_frame.goose_pdu.sqNum = 0;                     /* sqNum */
   goose_frame.goose_pdu.test = 0;                      /* test */
   goose_frame.goose_pdu.confRev = 1;                   /* confRev */
   goose_frame.goose_pdu.ndsCom = 0;                    /* ndsCom */
@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
   /* Start the receiving (subscriber) thread */
   /* DEBUG */ printf("[-] creating subscriber thread\n");
   thread_return = pthread_create(&recv_thread, (pthread_attr_t *)NULL, 
-   (void *)(&goose_pong), (void *)&args);
+   &goose_pong, (void *)&args);
   if (thread_return)
   {
     HANDLE_ERRNO(errno, "main.pthread_create");
@@ -365,11 +365,13 @@ int main(int argc, char *argv[])
   /* Wait for the subscriber to start and then continue with the sending 
    * (publisher) main thread */
   sem_wait(&SUB_MUTEX); /* Wait for the subscriber to be started */
+#if 0
   i = sleep(5);         /* Sleep to ensure subscriber is ready */
   if (i)
   {
     fprintf(stdout, "[!] sleep remaining (%u)\n", i);
   }
+#endif
 
   for(i = 0; i < NUM_TRIGGERS; i++ )
   {
@@ -497,6 +499,14 @@ void *goose_pong(void *args)
 void dummy_goose_handler(u_char *args, const struct pcap_pkthdr *header, 
  const u_char *packet)
 {
+  /* Check parametets */
+  if (NULL == args || NULL == header || NULL == packet)
+  {
+    /* Output failure */
+    printf("!");
+  }
+
+  /* Pretend that frame is processed correctly and output success */
   printf(".");
   return;
 }
@@ -582,7 +592,7 @@ void goose_pong_handler(u_char *args, const struct pcap_pkthdr *header,
 }
 
 
-void print_times()
+void print_times(void)
 {
   int i = 0;                 /* Temporary variable as loop index */
   struct timeval s_tv = {0}; /* Temporary variable to hold send time */
@@ -597,7 +607,7 @@ void print_times()
 }
 
 
-void print_usage() 
+void print_usage(void) 
 {
   fprintf(stdout, "goose_ping, version %s\n\n", VER);
   fprintf(stdout, "usage: goose_ping iface\n\n");
