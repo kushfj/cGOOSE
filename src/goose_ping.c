@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 
   /* Initialise GOOSE Header */
   goose_frame.goose_header.appid = htons(0x0);
-  goose_frame.goose_header.len = htons(0x86); /* TODO: Calculate this */
+  goose_frame.goose_header.len = htons(0x6B); /* TODO: Calculate this */
   goose_frame.goose_header.res1 = htons(0x0);
   goose_frame.goose_header.res2 = htons(0x0);
 
