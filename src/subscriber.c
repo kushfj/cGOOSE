@@ -154,7 +154,7 @@ void goose_handler_print(u_char *args, const struct pcap_pkthdr *header,
       switch (*len_ptr)
       {
         case 1:
-          fprintf(stdout, "%hu", (*(len_ptr+1)));
+          fprintf(stdout, "%hhu", (*(len_ptr+1)));
           break;
         default:
           fprintf(stdout, "[undefined]");
@@ -169,7 +169,7 @@ void goose_handler_print(u_char *args, const struct pcap_pkthdr *header,
       switch (*len_ptr)
       {
         case 1:
-          fprintf(stdout, "%hu", (*(len_ptr+1)));
+          fprintf(stdout, "%hhu", (*(len_ptr+1)));
           break;
         default:
           fprintf(stdout, "[undefined]");
